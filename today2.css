@@ -315,6 +315,7 @@
 .enter-button {
     position: absolute;
     right: 10px;
+    z-index: 1000000000;
     top: 50%;
     transform: translateY(-50%);
     padding: 10px;
