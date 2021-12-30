@@ -1,10 +1,19 @@
+let temp2
 let temp1
+let tempa = []
 
 
 const katexitemc = {
     props: ['item'],
     render(h) {
-        return renderhelper(this, h, this.item, 'katex-expression')
+        function runner(item) {
+            return looksLikeProse(item) ? 
+                h('span', {class: 'prose-item'}, item) : 
+                h('span', {directives: [{class: 'katex-item', name: 'katex', value: item}]})
+        }
+
+        const items = splitkatex(this.item).map(runner)
+        return items.length == 1 ? items[0] : h('div', {class: 'math-expression'}, items)
     }
 }
 
@@ -37,11 +46,9 @@ const standardArithmetic = {
         if (this.isCorrect == false) {
             return {color: 'white'}
         }
-    },
-
-
+      },
       csHotstreak() {
-          return {fontSize: (this.hotstreak) + 72 + 'px'}
+          return {fontSize: '72px'}
       },
       tname() {
             console.log('hi tname')
@@ -84,40 +91,10 @@ const standardArithmetic = {
         </div>
     `,
 
-    adgtemplate: `
-        <div @click="foobarfocus" >
-            <transition name="katex-item" mode="out-in">
-                <katexitemc :key="questionIndex" :item="item.question"/>
-            </transition>
-
-                <input class="standard-input" ref="input" style="transition: all 0.5s;" :style='csInput' :disabled="disabled" v-model="userAnswer" @keydown.enter="submitAnswer"/>
-
-            <transition name="fade" mode="out-in">
-                <div :style="csHotstreak" v-show="hotstreak > 0 && this.disabled" class="hotstreak">
-                    {{hotstreak}}
-                </div>
-            </transition>
-        </div>
-    `,
     methods: {
-        foobarfocus() {
-            console.log('hiii foo')
-            this.$refs.input.focus()
-        },
-        generate() {
-            this.$qc.generate()
-        },
         async submitAnswer(e) {
-            this.$qc.handleInput(this)
+            this.$qc.handleInput()
         }
-    },
-    watch: {
-        async mounted() {
-            this.$refs.input.focus()
-        },
-    },
-    created() {
-       this.$qc.load(this) 
     },
     mounted() {
         this.$refs.input.focus()
@@ -179,6 +156,7 @@ function kmtyper(s) {
 
 
 function sanitizeMathAnswer(s) {
+    if (!s) return 
     s = s.trim()
     if (s.startsWith('.')) return '0' + s
     else if (test(/^\d+\.\d+?0$/, s)) return s.replace(/0+$/, '')
@@ -214,8 +192,8 @@ function rhGetType(item) {
 
 function katexExpression(rh) {
     if (rh.items.length == 1) {
-        const style = rh.item.length > 15 ? {fontSize: '40px'} : null
-        return tvKatex(rh.item, 'katex-item', style)
+        //const style = rh.item.length > 15 ? {fontSize: '40px'} : null
+        return tvKatex(rh.item, 'katex-item')
     }
     else {
         return rh.items.map((item, i) => {
@@ -302,18 +280,32 @@ function qcRef() {
 }
 
 class QuizController {
-    load(state) {
-        const comps = state.$parent.$options.components
-        const names = Object.keys(comps)
-        const name = names[0]
-        this[name] = state
+    load(vue) {
+        this.debug = false
+        this.vue = vue
+        temp1 = vue
+        setTimeout(() => {
+            this.state = this.vue.$children[0]
+            console.log(this.state, 'suces')
+
+            if (this.debug) {
+                window.addEventListener('keydown', (e) => {
+                   if (e.key == 's') {
+                       download('data.json', tempa)
+                   }
+                   tempa.push(this.item)
+                   console.log('pushed')
+                })
+            }
+        }, 100)
     }
     constructor(vue) {
-        this.hotstreaks = []
-        this.vue = vue
+        this.load(vue)
+
         this.qg = new QuestionGenerator()
         this.qg.load()
         this.qg.setTopic('exponents')
+        this.hotstreaks = []
         this.questionIndex = 0
         this.generate()
         this.correct = 0
@@ -323,15 +315,13 @@ class QuizController {
         this.hotstreak = 0 
         this.count = 0
         this.hotTouches = 0
-
-        //createListener(this, ...qcRef())
     }
 
     get templimit() {
+        return 1
         if (this.count < 7 || !this.touchedHotness) return 2
         if (this.hotstreak > 3 && this.count > 10) return 1
         else if (this.hotstreak > 4) return 1
-        return 1
     }
 
     generate() {
@@ -342,6 +332,13 @@ class QuizController {
         this.vue.item = item
         this.vue.questionIndex += 1
         this.questionIndex += 1
+
+        if (this.debug) {
+            setTimeout(() => {
+                this.state.userAnswer = this.item.answer.toString()
+                this.handleInput()
+            }, 2000)
+        }
     }
 
     get touchedHotness() {
@@ -352,7 +349,8 @@ class QuizController {
         // the level at which to revert the difficulty
         return 2
     }
-    handleInput(state) {
+    handleInput() {
+        let state = this.state
 
         let userAnswer = sanitizeMathAnswer(state.userAnswer)
 
@@ -367,7 +365,8 @@ class QuizController {
 
             if (this.tempcorrect >= this.templimit && !this.qg.finished) {
                 this.tempcorrect = 0
-                qgHarder(this.qg)
+                this.qg.index += 1
+                this.qg.level = 0
             }
             else {
                 console.log('not harder')
@@ -409,7 +408,8 @@ class QuizController {
             if (this.count > 10 || userAnswer == '' || this.tempwrong == this.wrongtemplimit) {
                 state.isCorrect = false 
                 this.tempwrong = 0
-                if (this.qg.level > this.levelDeterminant && coinflip()) this.qg.level -= 1
+                //if (this.qg.level > this.levelDeterminant && coinflip()) this.qg.level -= 1
+                this.qg.index -= 1
                 state.$refs.input.blur()
 
                 setTimeout(() => {
@@ -622,7 +622,7 @@ function vkatex(element, binding, value) {
     const options = {
         displayMode,
         throwOnError: true,
-        minRuleThickness: 0.5,
+        //minRuleThickness: 0.5,
     }
 
     try {
@@ -706,19 +706,6 @@ const questionc = {
             questionIndex: 0,
             item: null,
         }
-    },
-    mounted() {
-        //setTimeout(() => {
-            //this.cc = 'solve-for-x'
-            //setTimeout(() => {
-                //this.cc = 'standard-arithmetic'
-            //}, 2000)
-        //}, 3000)
-    },
-
-    computed: {
-    },
-    methods: {
     },
     created() {
         Vue.prototype.$qc = new QuizController(this)
