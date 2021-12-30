@@ -1,3 +1,23 @@
+var QuestionGenerator = (function() {
+
+function progression(template, steps = 2) {
+    let s = ''
+    let operator = '*'
+    let exponentOperator = randomPick(['+', '-', '*'])
+    for (let i = 0; i < steps; i++) {
+        let increment = i + 1
+        let next = template.replace(/\^(\w)/, (_, x) => `^(${x} ${exponentOperator} ${increment})`)
+        if (i < steps - 1) {
+            s += next + ' ' + operator + ' '
+        }
+        else {
+            s += next + ' = ' + template.replace(/\^(\w)/, '^x')
+        }
+    }
+    const p = s.trim()
+    return p
+}
+
 function createError() {
     console.log('asdfasdfasdf')
     throw new Error("")
@@ -20,7 +40,8 @@ const NUMBER_RANGES = {
     ],
     //multiplication: [[11,15], [11, 19], [11, 19], [11, 19], [11, 19], [11, 19], [11, 19]],
     tens: [[2, 9], [2, 18], [30, 50], [50, 75]],
-    exponents: [[1, 5], [3, 7], [5, 9]],
+    exponents: [[1, 8], [3, 10]],
+    fractions: [[1, 5], [3, 7], [1, 9]],
     answers: [[1, 9], [5,20]],
     addZeroes: [[1, 2], [2, 4], [4, 6]],
     addDecimals: [[-2, -1], [-3, -2], [-4, -3]],
@@ -36,7 +57,7 @@ const alanStudent = {
     templates: {
         'multiplication': [
             'a * b',
-            () => coinflip() ? 'a * x' : 'x * a',
+            'a * x',
         ],
         'tens': [
             'a * 10^b * 10^x', 
@@ -44,18 +65,45 @@ const alanStudent = {
             '2 * 10^3 * 5 * 10^4 =',
             '2 * 10^3 * 5 * 10^4 = 2^x',
         ],
+        fractions: [
+            'a/b - b/${2b} - b/${3b}',
+            'a/b - a/c',
+            'a/b - a',
+            'a/b - b',
+            '1/(a/b)',
+            '((b/a) / (a/b))',
+            '((4)/(b/a))/(a/b)',
+            '1 / ((a/b) - b)',
+            //progression('a/b'),
+        ],
+        roots: [
+            // some connection ... to the other side of exponents.
+            // when the child reflects poorly ...
+            // kids have to be super careful ... 
+            // to trust me ...
+        ],
 
         'exponents': [
-            '2^a * 2^x = 8^(1 + x)',
-            '2^a * 2^b',
-            '2^a * 2^b * 2^c',
+            //'a/b - x - b*c',
+            //'ax - bc',
+            //'2x - 3',
+            //'ax - 3',
+            //'2^a * 2^b = 2^x',
+            '2^a * 2^b * 2^c = 2^x',
             '4^a * 2^x = 2^(x + x)',
+            '2^a * 2^x = $pow64^(b + x)',
+            '2^a * 2^-b',
+            'a^a * a^${2a} = a^(3x)',
+            'a^b * a^(c+2) = a^x',
+            'a^(-x) = a^(b+x+c)',
+            '($pow3^a * (1/$pow3^c)) / ($pow3^b / $pow3^x)',
+            //progression('a^b'),
+            '$pow2^a * $pow2^x',
+            //'$pow3^a / $pow3^x',
+            //'$pow3^a * $pow3^x',
         ],
     }
 }
-
-
-var QuestionGenerator = (function() {
 
 const preparselib = {
     //multiplication: prepinfmult,
@@ -67,11 +115,11 @@ function prepinfmult(template, inf) {
 
 const postparselib = {
     tens: (s) => lookbehindreplace(/= (\w+)/, toExponentialForm, s),
+    exponents: (s) => lookbehindreplace(/= (\w+)/, toExponentialForm, s),
 }
 
 const floatingPointREGEX = '(?:.(?:' + [0,1,2,3,4,5,6,7,8,9].map((x) => x + '{' + 5 + ',}').join('|') + ')(?:\\d|e-\\d+)$)'
 //console.log(floatingPointREGEX)
-//const nerdamer = require("nerdamer/all.min")
 let globalDebug = true
 
 const infusionRef = [
@@ -117,6 +165,7 @@ class BaseGenerator {
         let count = 0
         while (count++ < 20) {
             let value = this._generate(item)
+            return value
 
             if (!this.validator(value, count, bypass)) {
                 continue
@@ -144,15 +193,13 @@ class BaseGenerator {
            return false
        }
 
-       if (this.config.onlyPositiveAnswers && parseInt(x.answer) <= 0) {
-           return false
-       }
+       //if (this.config.onlyPositiveAnswers && parseInt(x.answer) <= 0) {
+           //return false
+       //}
        return true
     }
 
 }
-
-
 
 function lookbehindreplace(r, fn, s, flags = '') {
     const helper = (_, x, offset, original) => {
@@ -173,7 +220,22 @@ function rescape(s) {
 
 
 function toLatex(s) {
-    if (isNode()) return s
+    try {
+        if (!(typeof nerdamer == 'undefined')) {
+            return nerdamer.convertToLaTeX(s)
+            let value = nerdamer.convertToLaTeX(s)
+            return removeParens(value)
+        }
+        return toMath(s)
+    }
+    catch(e) {
+        console.log('hi from error')
+        console.log(e)
+        consoleThrow()
+        //return toMath(s)
+    }
+
+
     const dict = {
         '*': '\\cdot',
         '?': '\\medspace ?',
@@ -182,16 +244,16 @@ function toLatex(s) {
 
     //return s.replace(/\*/g, '\\cdot')
 
-    //if (!test(/[\+\*\^]/, s)) return toLatexFromVeryRaw(s)
 
     //s = s.replace(/\^\w+/, (x) => x.replace(/\^/, '^{') + '}')
     //return s
 }
 
 
-
-
-
+function removeParens(s) {
+    return s
+    return s.replace(/\(|\)/g, '')
+}
 
 
 function conditionalAssign(to, from) {
@@ -201,6 +263,7 @@ function conditionalAssign(to, from) {
         }
     }
 }
+
 
 class Calculation {
     constructor() {
@@ -366,6 +429,49 @@ function calculate(s) {
     return value
 }
 
+const numberRef = {
+    'pow2': [2, 4, 8],
+    'pow64': [2, 4, 8, 16, 32, 64, 128],
+    'pow3': [3, 9],
+}
+
+
+
+
+function toMath(s) {
+    const dictA = {
+        'p': '+',
+        't': '\\cdot',
+        'm': '-',
+        '=': '=',
+    }
+
+    const regex = / *[mpt=] *|e(-?[abcxyz\d]+)|sqrt(\w+)|([abcdxyz\d]\/[abcdxyz\d]+)/g
+    return replace(regex, parser, s, 'g')
+
+    function parser(x, exp, sqrt, frac) {
+        x = x.trim()
+
+        if (x in dictA) {
+            return ' ' + dictA[x] + ' '
+        }
+
+        if (exp) {
+            return '^{' + exp + '}'
+        }
+
+        if (sqrt) {
+            return '\\sqrt{' + exp + '}'
+        }
+
+        if (frac) {
+            let [a,b] = splitonce(frac, '/')
+            return '\\frac{' + a + '}' + '{' + b + '}'
+        }
+
+    }
+}
+
 class QuestionGenerator {
     constructor() {
         this.count = 0
@@ -442,11 +548,16 @@ class QuestionGenerator {
             console.log('postparsing with lib')
             value.question = postparselib[this.topic](value.question, this)
         }
-        value.question = toLatex(value.question)
+        //value.question = toLatex(value.question)
     }
 
     _preparse(template) {
         if (isFunction(template)) return template()
+        if (coinflip(0.3) && test(/^\S+ \S \S+$/)) template = reverseMathString(template)
+        template = template.replace(/[abcd\d][abcxyz]/g, (x) => x[0] + '*' + x[1])
+        template = template.replace(/\$(\w+)/g, (_, key) => {
+            return randomPick(numberRef[key])
+        })
         return template.replace(/z+/g, (x) => '0'.repeat(rng(0, x.length + 1)))
     }
 
@@ -708,6 +819,11 @@ function prepareIterable(data, mode) {
 function isNumber(s) {
     return typeof s == 'number' || test('^-?\\d+$', s)
 }
+function reverseMathString(s) {
+    const items = s.split(' ')
+    items.reverse()
+    return items.join(' ')
+}
 function test(regex, s, flags = '') {
     return RegExp(regex, flags).test(s)
 }
@@ -843,7 +959,8 @@ class NumberGen {
 
     static getFraction(level) {
         let range = rangegetter('fractions', level)
-        return toFraction(...range)
+        const p = toFraction(...range)
+        return p
     }
 
     static fractionCondition(x) {
@@ -980,7 +1097,9 @@ function toFraction(a, b, mode = String) {
         b = a[1]
         a = a[0]
     }
+    return simplifyFraction(a, b)
     [a,b] = simplifyFraction(a, b)
+    //console.log(a, b)
     if (b == 1) return a
     if (mode == Array) return [a, b]
     if (mode == String) return a + '/' + b
@@ -992,7 +1111,11 @@ function simplifyFraction(a,b) {
     if (hasDecimal(a)) {let factor = Math.pow(10, countDecimalPlaces(a)); a *= factor; b *= factor}
     if (hasDecimal(b)) {let factor = Math.pow(10, countDecimalPlaces(b)); b *= factor; a *= factor}
     let g = gcd(a,b)
-    return [a,b].map(x => x/g).join('/')
+    //console.log(g)
+    //console.log(a, b)
+    const p = [a,b].map(x => x/g).join('/')
+    //console.log(p)
+    return p
 }
 function hasDecimal(x, n = 0) {
     return test('\\.' + '\\d'.repeat(n), String(x))
@@ -1016,21 +1139,34 @@ class InfusionGenerator extends BaseGenerator {
 
     withNumbers() {
 
-        const runnerA = (s) => isFraction(s) ?
-            this.numbergen.getRandomFraction() : 
-            s == 'n' ? 
-            NumberGen.getNumber(this.config.level) :
-            this.config.useVariablesInAnswer && coinflip(0.35) && !this.numbergen.cache.has(s) ? 
-            s.toUpperCase() : 
-            this.numbergen.getCached(s)
+        const runnerA = (s) => {
+            if (isFraction(s)) {
+                return this.numbergen.getRandomFraction() 
+            }
+
+            if (s == 'n') {
+                return NumberGen.getNumber(this.config.level)
+            }
+
+            if (this.config.useVariablesInAnswer && coinflip(0.35) && !this.numbergen.cache.has(s)) {
+                return s.toUpperCase()
+            }
+
+            return this.numbergen.getCached(s)
+        }
 
         const runnerB = (s) => this.config.addZerosOrDecimals ? 
             zeroify(s, rangegetter(this.config.addZerosOrDecimals, this.config.level)) : s
 
         this.replace(abcdeFractionRE, (s) => {
-            let p = s.length == 1 ? runnerA(s) : eval(splitmapjoin(s, runnerA, '', '*'))
+            let p = s.length == 1 ? runnerA(s) : identity(splitmapjoin(s, runnerA, '/', '/'))
             return runnerB(p)
         })
+
+        console.log(this.s)
+        //throw ""
+        //unth 
+        this.replace(/\$\{(.*?)\}/g, (_, x) => eval(x))
     }
 
     withVariables(letter = 'x') {
@@ -1050,7 +1186,6 @@ class InfusionGenerator extends BaseGenerator {
 
     withEquals() {
         if (test(/=/, this.s)) {
-            console.log('asdf')
             this.answer = fractionize(nerdsolver(this.s))
         }
 
@@ -1059,7 +1194,7 @@ class InfusionGenerator extends BaseGenerator {
             if (!this.isValidAnswer(answer)) {
                 return this.doItAgain()
             }
-            this.s += ' = ?'
+            // moving = ? to the postparse
             this.answer = answer
         }
 
@@ -1091,13 +1226,14 @@ class InfusionGenerator extends BaseGenerator {
     }
 
     get value() {
-        //console.log(this.s)
-        //124
+        
+        let question = toLatex(this.s)
+        if (!test(/x/, question)) {
+            question += ' = ?'
+        }
+
         return {
-            //value.quest
-            //if (isBrowser()) value.question = toLatex(value.question)
-            //question: stylemath(this.s),
-            question: this.s,
+            question,
             answer: this.answer,
         }
     }
@@ -1171,6 +1307,9 @@ function fixFloatingPoint(number) {
 
         if (a == '.') {
             if (offset == 2) return x[1]
+            console.log('x', x)
+
+            if (x[1] == 0 && x[2] == 0) return ''
             return x
         }
 
@@ -1199,7 +1338,9 @@ function isDecimal(x) {
 function addZeroes(n, amount) {
     return n * Math.pow(10, amount)
 }
-const abcdeFractionRE = /[a-v]+(?:\/[a-e])?/g
+//const abcdeFractionRE = /[a-v]+(?:\/[a-e])?/g
+const abcdeFractionRE = /[a-e]/g
+//const abcdeFractionRE = /[a-v]+(?:\/[a-e])?/g
 function splitmapjoin(x, fn, split, join) {
     const dict = {
         '': ['', ''],
@@ -1217,6 +1358,7 @@ function splitmapjoin(x, fn, split, join) {
     if (!join) [split, join] = dict[split]
     
     const items = isArray(x) ? x : x.split(split)
+    console.log({items})
     return items.map(pipe(fn)).join(join).trimEnd()
 }
 function pipe(...a) {
@@ -1229,7 +1371,7 @@ function pipe(...a) {
 const abcdeRE = /[a-e]/g
 function mathsolver(s) {
     if (typeof nerdamer == 'undefined') return 401
-    return s.includes('=') ? nerdsolver(s) : nerdamer(s).evaluate().toString()
+    return s.includes('=') ? nerdsolver(s) : evaluated(s)
 }
 function isNode() {
     return typeof window === 'undefined'
@@ -1256,24 +1398,6 @@ function nerdsolver(s, target) {
     }
 
     const equationSolver = (s) => nerdamer.solveEquations(s.split(/, */)).map(x => x[1])
-
-    function createPackageFactory() {
-        // this isn't working
-        let count = 0
-        let tracker = [0, 0, 0, 0, 0, 0]
-        let trackerIndex = 0
-        return (items) => {
-            count += 1
-            return items.map((x, i) => {
-                if (i == trackerIndex) {
-                    let current = tracker[trackerIndex]
-                    tracker[trackerIndex] += 1
-                }
-                let number = count
-                return [x, number]
-            })
-        }
-    }
 
     function guessSolver(s) {
         // Solving for when there are 2 unknown variables
@@ -1368,14 +1492,20 @@ function findall(regex, s, flags = 'g', extra = '') {
     return store
 }
 function fractionize(s) {
-    if (isNumber(s)) {
+    try {
+        if (isNumber(s)) {
         return decimalToFraction(s)
-    } 
-
-    if (isPercentage(s)) {
+        }
+        
+        if (isPercentage(s)) {
         return s
+        }
+        return s.replace(numberREGEX, decimalToFraction)
     }
-    return s.replace(numberREGEX, decimalToFraction)
+    catch(e) {
+        //console.log(e)
+        return
+    }
 }
 function decimalToFraction(dec) {
     let epsilon = 1e-7
@@ -1666,161 +1796,8 @@ function char2n(ch) {
 }
 
 
-function medley(qg, student = alanStudent) {
-    
-    const generator = new QuestionGenerator()
-    generator.load(student)
-    const topicItems = generator.student.templates[generator.topic]
-    const store = []
-    for (let [k, v] of Object.entries(student.templates)) {
-        
-        generator.setTopic(k)
-
-        for (let i = 0; i < v.length; i++) {
-
-            const questionItem = generator.generate()
-            store.push(questionItem)
-
-            if (generator.level < NUMBER_RANGES[generator.topic]) generator.level += 1
-            generator.index += 1
-        }
-        console.log(store)
-        throw ""
-        store.push(null)
-    }
-    console.log(store)
-}
-
-
-
-function testsuite() {
-    //s = eval('0.14 * 150')
-    s =  '0.00014 * 0.000011'
-    s  = eval(s)
-    console.log(s)
-    t = fixFloatingPoint(s)
-    console.log(t)
-
-    throw ""
-}
-//testsuite()
-//medley()
-
-function isLongerButCorrect(userAnswer, answer) {
-    return userAnswer.trim() == answer && userAnswer.length > answer.length
-    `Your answer, ${userAnswer}, is correct! However, it is more accepted to write your answer as ${answer}.`
-}
-
 return QuestionGenerator
+
 
 })()
 
-
-
-function medley(generator) {
-    
-    generator.load()
-    const topicItems = generator.student.templates[generator.topic]
-    const store = []
-    for (let [k, v] of Object.entries(generator.student.templates)) {
-        
-        generator.setTopic(k)
-
-        for (let i = 0; i < v.length; i++) {
-
-            const levels = generator.NUMBER_RANGES[k].length
-            for (let i = 0; i < levels; i++) {
-                
-                store.push(generator.generate())
-                store.push(generator.generate())
-                if (generator.level < levels) generator.level += 1
-            }
-
-            console.log(store)
-            throw ""
-
-            generator.index += 1
-        }
-        store.push(null)
-    }
-    console.log(store)
-}
-
-//medley(new QuestionGenerator())
-
-function qgHarder(qg) {
-    console.log('going harder')
-    if (qg.finished) {
-        throw new Error("shouldnt be here")
-    }
-    if (qg.doneWithLevel) {
-        console.log('done with l')
-        qg.level = 0
-        qg.index += 1
-    }
-    else {
-        console.log('same level')
-        qg.level += 1
-    }
-}
-
-function testing(qg) {
-   qg.load()
-}
-
-function qgFinished(qg) {
-    return qg.finished
-}
-
-
-function testing(qg) {
-
-   qg.load()
-   qg.conditionalConfig({uniqueNumbers: false})
-   //console.log(qg)
-   //console.log(qg.generate())
-
-    for (let i = 0; i < 100; i++) {
-        try {
-            const s = qg.generate()
-            //console.log(s)
-        }
-        catch(e) {
-            console.log(e)
-            console.log(i)
-            throw new Error("")
-            return 
-        }
-    }
-    console.log('done')
-}
-
-
-function generate(qg) {
-
-   qg.load()
-   qg.conditionalConfig({uniqueNumbers: false})
-
-    for (let i = 0; i < 40; i++) {
-        if (i % 10 == 0) {
-            qgHarder(qg)
-        }
-        try {
-            const s = qg.generate()
-            console.log(s)
-        }
-        catch(e) {
-            console.log(e)
-            console.log(i)
-            throw new Error("")
-            return 
-        }
-    }
-    console.log('done')
-}
-
-function qgFinished(qg) {
-    return qg.finished
-}
-
-//generate(new QuestionGenerator())
