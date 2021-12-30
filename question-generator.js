@@ -1,22 +1,9 @@
 var QuestionGenerator = (function() {
 
-function progression(template, steps = 2) {
-    let s = ''
-    let operator = '*'
-    let exponentOperator = randomPick(['+', '-', '*'])
-    for (let i = 0; i < steps; i++) {
-        let increment = i + 1
-        let next = template.replace(/\^(\w)/, (_, x) => `^(${x} ${exponentOperator} ${increment})`)
-        if (i < steps - 1) {
-            s += next + ' ' + operator + ' '
-        }
-        else {
-            s += next + ' = ' + template.replace(/\^(\w)/, '^x')
-        }
-    }
-    const p = s.trim()
-    return p
+function evaluated(s) {
+    return nerdamer(s).evaluate().text()
 }
+
 
 function createError() {
     console.log('asdfasdfasdf')
@@ -25,84 +12,6 @@ function createError() {
 
 function coinflip(n = 0.5) {
     return Math.random() > 1 - n
-}
-
-const NUMBER_RANGES = {
-    numbers: [[2, 9], [2, 18], [30, 50], [50, 75]],
-    multiplication: [
-        [11,13], 
-        {range: [11,13], decimals: 1},
-        [13,17],
-        {range: [13,17], decimals: 1},
-        //[16,19],
-        //{range: [16,19], decimals: 1},
-        //{range: [16,19], decimals: 2},
-    ],
-    //multiplication: [[11,15], [11, 19], [11, 19], [11, 19], [11, 19], [11, 19], [11, 19]],
-    tens: [[2, 9], [2, 18], [30, 50], [50, 75]],
-    exponents: [[1, 8], [3, 10]],
-    fractions: [[1, 5], [3, 7], [1, 9]],
-    answers: [[1, 9], [5,20]],
-    addZeroes: [[1, 2], [2, 4], [4, 6]],
-    addDecimals: [[-2, -1], [-3, -2], [-4, -3]],
-    addZerosOrDecimals: [[1, 3], [-2, 3], [-3, 4]],
-    levels: [[2, 9], [2, 18]],
-    //numbers: [[2, 9], [2, 18], [30, 50], [50, 75], [76, 100], [30, 1000], [900, 1000], [2000, 2500], [2600, 3000]],
-}
-
-
-const alanStudent = {
-    lastIndex: 0,
-    level: 0,
-    templates: {
-        'multiplication': [
-            'a * b',
-            'a * x',
-        ],
-        'tens': [
-            'a * 10^b * 10^x', 
-            'a * 10^c * b * 10^d =',
-            '2 * 10^3 * 5 * 10^4 =',
-            '2 * 10^3 * 5 * 10^4 = 2^x',
-        ],
-        fractions: [
-            'a/b - b/${2b} - b/${3b}',
-            'a/b - a/c',
-            'a/b - a',
-            'a/b - b',
-            '1/(a/b)',
-            '((b/a) / (a/b))',
-            '((4)/(b/a))/(a/b)',
-            '1 / ((a/b) - b)',
-            //progression('a/b'),
-        ],
-        roots: [
-            // some connection ... to the other side of exponents.
-            // when the child reflects poorly ...
-            // kids have to be super careful ... 
-            // to trust me ...
-        ],
-
-        'exponents': [
-            //'a/b - x - b*c',
-            //'ax - bc',
-            //'2x - 3',
-            //'ax - 3',
-            //'2^a * 2^b = 2^x',
-            '2^a * 2^b * 2^c = 2^x',
-            '4^a * 2^x = 2^(x + x)',
-            '2^a * 2^x = $pow64^(b + x)',
-            '2^a * 2^-b',
-            'a^a * a^${2a} = a^(3x)',
-            'a^b * a^(c+2) = a^x',
-            'a^(-x) = a^(b+x+c)',
-            '($pow3^a * (1/$pow3^c)) / ($pow3^b / $pow3^x)',
-            //progression('a^b'),
-            '$pow2^a * $pow2^x',
-            //'$pow3^a / $pow3^x',
-            //'$pow3^a * $pow3^x',
-        ],
-    }
 }
 
 const preparselib = {
@@ -1798,6 +1707,127 @@ function char2n(ch) {
 
 return QuestionGenerator
 
-
 })()
 
+
+// 8^2 * 2^2x = 8^ (x + x)
+
+const NUMBER_RANGES = {
+    numbers: [[2, 9], [2, 18], [30, 50], [50, 75]],
+    multiplication: [
+        [11,13], 
+        {range: [11,13], decimals: 1},
+        [13,17],
+        {range: [13,17], decimals: 1},
+        //[16,19],
+        //{range: [16,19], decimals: 1},
+        //{range: [16,19], decimals: 2},
+    ],
+    //multiplication: [[11,15], [11, 19], [11, 19], [11, 19], [11, 19], [11, 19], [11, 19]],
+    tens: [[2, 9], [2, 18], [30, 50], [50, 75]],
+    exponents: [[1, 8], [3, 10]],
+    fractions: [[1, 5], [3, 7], [1, 9]],
+    answers: [[1, 9], [5,20]],
+    addZeroes: [[1, 2], [2, 4], [4, 6]],
+    addDecimals: [[-2, -1], [-3, -2], [-4, -3]],
+    addZerosOrDecimals: [[1, 3], [-2, 3], [-3, 4]],
+    levels: [[2, 9], [2, 18]],
+    //numbers: [[2, 9], [2, 18], [30, 50], [50, 75], [76, 100], [30, 1000], [900, 1000], [2000, 2500], [2600, 3000]],
+}
+
+const alanStudent = {
+    lastIndex: 0,
+    level: 0,
+    templates: {
+        'multiplication': [
+            'a * b',
+            'a * x',
+        ],
+        'tens': [
+            'a * 10^b * 10^x', 
+            'a * 10^c * b * 10^d =',
+            '2 * 10^3 * 5 * 10^4 =',
+            '2 * 10^3 * 5 * 10^4 = 2^x',
+        ],
+        fractions: [
+            'a/b - b/${2b} - b/${3b}',
+            'a/b - a/c',
+            'a/b - a',
+            'a/b - b',
+            '1/(a/b)',
+            '((b/a) / (a/b))',
+            '((4)/(b/a))/(a/b)',
+            '1 / ((a/b) - b)',
+            //progression('a/b'),
+        ],
+        roots: [
+            // some connection ... to the other side of exponents.
+            // when the child reflects poorly ...
+            // kids have to be super careful ... 
+            // to trust me ...
+        ],
+
+        'exponents': [
+            //'a/b - x - b*c',
+            //'ax - bc',
+            //'2x - 3',
+            //'ax - 3',
+            //'2^a * 2^b = 2^x',
+            //'2^a * 2^b * 2^c = 2^x',
+            '4^a * 2^x = 2^(x + x)',
+            '2^a * 2^x = $pow64^(b + x)',
+            '2^a * 2^-b',
+            'a^a * a^${2a} = a^(3x)',
+            'a^b * a^(c+2) = a^x',
+            'a^(-x) = a^(b+x+c)',
+            '($pow3^a * (1/$pow3^c)) / ($pow3^b / $pow3^x)',
+            progression('a^b'),
+            '$pow2^a * $pow2^x',
+            '$pow3^a / $pow3^x',
+            '$pow3^a * $pow3^x',
+        ],
+    }
+}
+
+
+
+function medley() {
+    const generator = new QuestionGenerator()
+    generator.load(alanStudent)
+    generator.setTopic('exponents')
+    const items = generator.student.templates[generator.topic]
+    for (i =0; i < items.length; i++) {
+        console.log(generator.generate())
+        generator.index += 1
+    }
+}
+
+function progression(template, steps = 2) {
+    let s = ''
+    let operator = '*'
+    let exponentOperator = randomPick(['+', '-', '*'])
+    for (let i = 0; i < steps; i++) {
+        let increment = i + 1
+        let next = template.replace(/\^(\w)/, (_, x) => `^(${x} ${exponentOperator} ${increment})`)
+        if (i < steps - 1) {
+            s += next + ' ' + operator + ' '
+        }
+        else {
+            s += next + ' = ' + template.replace(/\^(\w)/, '^x')
+        }
+    }
+    const p = s.trim()
+    return p
+}
+
+function randomPick(items) {
+    if(!isArray(items)) return items
+    return items[Math.floor(Math.random() * items.length)]
+}
+
+function isArray(a) {
+    return Array.isArray(a)
+}
+
+
+//medley()
