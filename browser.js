@@ -174,7 +174,7 @@ function preventDefaultFactory() {
 
         if (isString(e)) return 
         if (ctrlKey && test(/[abcdefg]/, e.key)) e.preventDefault()
-        if (ctrlKey && test(/[i-+]/, e.key)) {
+        if (ctrlKey && test(/[i\-\+]/, e.key)) {
             return 
         }
 
@@ -190,6 +190,18 @@ function preventDefaultFactory() {
 
 
 
+
+function clearStorage(key) {
+    
+    if (!key) {
+        console.log('clearing all storage items')
+        localStorage.clear()
+    }
+    else {
+        console.log('clearing storage', key)
+        delete localStorage[key]
+    }
+}
 
 
 function setupDirectives() {
@@ -209,6 +221,7 @@ function setClipboard(s) {
 
 
 function loadcss(s) {
+    console.log('loading css')
     if (s.length < 20) s = getStorage(s)
     if (s.length < 5) throw new Error("")
     return createElement('style', {innerHTML: s}, document.head)
@@ -318,7 +331,7 @@ function animated(el, key, start, end, options = 1000) {
 }
 
 
-function appeardisappear(el, duration = 5000) {
+function appeardisappear(el, duration = 2000) {
     el.style.opacity = 0
     const keyframes = [
         {opacity : 0, offset: 0},
@@ -333,3 +346,61 @@ function appeardisappear(el, duration = 5000) {
 
     return el.animate(keyframes, options).finished.then((x) => el.style.opacity = 0)
 }
+
+function setAttribute(element, key, value) {
+    if (value == null) value = true
+    element.setAttribute(key, value)
+}
+
+
+function scrollToTop(element) {
+    element.scrollTop = 0
+}
+
+function scrollToBottom(element) {
+    setTimeout(() => element.scrollTop = element.scrollHeight , 100)
+}
+
+function getStylesheets(selectors) {
+    const store = new Storage(Object)
+    const stylesheets = filtered(document.styleSheets, (x) => x.cssRules.length > 0)
+
+    stylesheets.forEach((item, i) => {
+        for (let {cssText, selectorText} of item.cssRules) {
+            let obj = toCssObject(cssText)
+            store.add(selectorText, obj)
+        }
+    })
+
+    const output = store.entries.reduce((acc, [a,b]) => {
+        return acc += '\n' + cssBracket(a, reduceCSS(b)) + '\n'
+    }, '').trim()
+    console.log(output)
+    return output
+}
+
+function ecRemoveStylesheets(ec) {
+    const stylesheets = filtered(document.styleSheets, (x, i) => i > 0 && x.cssRules.length > 0)
+
+    stylesheets.forEach((sheet, i) => {
+        for (const {cssText, selectorText} of item.cssRules) {
+            const name = selectorText.replace(/^\./, '')
+
+            let obj = toCssObject(cssText)
+            store.add(selectorText, obj)
+        }
+
+        sheet.disabled = true
+        sheet.parentNode.removeChild(sheet)
+    })
+
+    const output = store.entries.reduce((acc, [a,b]) => {
+        return acc += '\n' + cssBracket(a, reduceCSS(b)) + '\n'
+    }, '').trim()
+    console.log(output)
+    //
+    // as the events ramp up more and more ... 
+    // 
+    return output
+}
+
