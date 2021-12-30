@@ -1,17 +1,24 @@
 <!doctype html><html>
     <head>
+
+        <script src="katex.min.js" charset="utf8"></script>
+        <link href="katex.min.css" rel="stylesheet"/>
+
+        <script src="nerdamer.js" charset="utf8"></script>
+        <script src="vue.js" charset="utf8"></script>
         <script src="css-parser.js" charset="utf8"></script>
         <link href="normalize.css" rel="stylesheet"/>
         <link href="today2.css" rel="stylesheet"/>
-        <script src="vue.js" charset="utf8"></script>
         <script src="base.js" charset="utf8"></script>
         <script src="vuetify.js" charset="utf8"></script>
         <script src="browser.js" charset="utf8"></script>
-        <script src="katex.min.js" charset="utf8"></script>
-        <link href="katex.min.css" rel="stylesheet"/>
         <script src="question-generator.js" charset="utf8"></script>
-        <script src="render.js" charset="utf8"></script>
-        <script src="nerdamer.js" charset="utf8"></script>
+        <script src="render.jsgithub" charset="utf8"></script>
+
+        <!-- <link href="ec.css" rel="stylesheet"/> -->
+        <!-- <link href="ec2.css" rel="stylesheet"/> -->
+        <!-- <script src="element-controller.js" charset="utf8"></script> -->
+        
     </head>
     
     <body>
@@ -20,29 +27,32 @@
     
     <script>
 
-       // webloader('today1.css nerdamer.js')
-    // const globalConsoleElement = createElement('div', {className: 'global-modal'}, document.body)
-    // assignStyle(globalConsoleElement, 'bgy2 b2i8 fs24 whitespace o1 wh200 abs east')
 
+        function vhtml(element, value) {
+            element.innerHTML = value
+        }
+
+        function vscroll(element) {
+            setTimeout(() => element.scrollTop = element.scrollHeight , 100)
+        }
         vuetify(vkatex)
         vuetify($findref)
         vuetify($toParent)
-        let startcc = 'startc'
+        vuetify(vscroll)
+        vuetify(vhtml)
+        let startcc = 'questionc'
         let globalDebug = false
-
-        // startcc = 'endc'
-        // globalDebug = true
-        // let gdstrk = 17
-
         const app = new Vue(main).$mount('#app')
-        // setupController(app, 'container')
-
-
-        function globalConsole(s) {
-            // globalConsoleElement.textContent = s
-            // appeardisappear(globalConsoleElement)
-        }
-            
-        
+        // new ElementController(null, app)
     </script>
+
+    <style>
+        .katex {
+            font-size: 64px;
+        }
+    </style>
+    
+    
+
+
 </html>
