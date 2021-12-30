@@ -28,7 +28,7 @@ const standardArithmetic = {
     },
      csInputContainer() {
         if (this.isCorrect == false) {
-            return {background: 'tomato'}
+            return {background: 'blue'}
         }
     },
 
@@ -313,6 +313,7 @@ class QuizController {
         this.vue = vue
         this.qg = new QuestionGenerator()
         this.qg.load()
+        this.qg.setTopic('exponents')
         this.questionIndex = 0
         this.generate()
         this.correct = 0
@@ -769,7 +770,7 @@ const startc = {
     `,
     data() {
         return {
-            countdown: 6,
+            countdown: 3,
             isTicking: false,
         }
     },
@@ -872,13 +873,10 @@ const main = {
     `,
     data() {
         return {
-            cc: startcc, 
+            cc: 'questionc', 
         }
     },
     mounted() {
     }
 }
 var green = tailwind['green5']
-
-
-
