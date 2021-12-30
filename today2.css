@@ -1,6 +1,4 @@
 
-
-
 .startc {
     transform: rotate("ow50deg");
     display: flex;
@@ -240,25 +238,20 @@
 
 
 
-.questionc {
-    scale: df;
-}
-
-
-
-
 .standard-arithmetic {
     margin: iddle;
     position: absolute;
     top: 0;
     left: 50%;
+    width: 100%;
     transform: translateX(-50%);
-    margin-top: -80px;
+    margin-top: 0;
     display: flex;
     flex-direction: column;
     height: 100%;
     align-items: center;
     justify-content: center;
+    gap: 40px;
 }
 
 
@@ -314,8 +307,8 @@
 
 .enter-button {
     position: absolute;
+    z-index: 100000;
     right: 10px;
-    z-index: 1000000000;
     top: 50%;
     transform: translateY(-50%);
     padding: 10px;
