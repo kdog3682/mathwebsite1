@@ -477,12 +477,18 @@ class QuestionGenerator {
     }
 
     getValue(template) {
-        template = this._preparse(template)
-        let value = this.generator.generate(template)
-        this._postparse(value)
-
-        if (!value.answer) {
+        try {
+            template = this._preparse(template)
+            let value = this.generator.generate(template)
+            this._postparse(value)
+            
+            if (!value.answer) {
             console.log('skipp template', template)
+            this.index += 1
+            return this.generate()
+            }
+        }
+        catch(e) {
             this.index += 1
             return this.generate()
         }
