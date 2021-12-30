@@ -328,10 +328,10 @@ class QuizController {
     }
 
     get templimit() {
-        if (this.count < 7 || !this.touchedHotness) return 3
+        if (this.count < 7 || !this.touchedHotness) return 2
         if (this.hotstreak > 3 && this.count > 10) return 1
         else if (this.hotstreak > 4) return 1
-        return 2
+        return 1
     }
 
     generate() {
@@ -880,3 +880,20 @@ const main = {
     }
 }
 var green = tailwind['green5']
+
+
+function qgHarder(qg) {
+    console.log('going harder')
+    if (qg.finished) {
+        throw new Error("shouldnt be here")
+    }
+    if (qg.doneWithLevel) {
+        console.log('done with l')
+        qg.level = 0
+        qg.index += 1
+    }
+    else {
+        console.log('same level')
+        qg.level += 1
+    }
+}
