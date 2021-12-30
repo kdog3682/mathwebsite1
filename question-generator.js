@@ -1,4 +1,8 @@
+
+let __n = 2
 var QuestionGenerator = (function() {
+
+if (typeof window == 'undefined')  nerdamer = require("nerdamer/all.min")
 
 function evaluated(s) {
     return nerdamer(s).evaluate().text()
@@ -342,6 +346,8 @@ const numberRef = {
     'pow2': [2, 4, 8],
     'pow64': [2, 4, 8, 16, 32, 64, 128],
     'pow3': [3, 9],
+    pm: ['+', '-'],
+    timesDivide: ['*', '/'],
 }
 
 
@@ -454,7 +460,7 @@ class QuestionGenerator {
 
     _postparse(value) {
         if (postparselib.hasOwnProperty(this.topic)) {
-            console.log('postparsing with lib')
+            //console.log('postparsing with lib')
             value.question = postparselib[this.topic](value.question, this)
         }
         //value.question = toLatex(value.question)
@@ -472,8 +478,15 @@ class QuestionGenerator {
 
     getValue(template) {
         template = this._preparse(template)
-        const value = this.generator.generate(template)
+        let value = this.generator.generate(template)
         this._postparse(value)
+
+        if (!value.answer) {
+            console.log('skipp template', template)
+            this.index += 1
+            return this.generate()
+        }
+
         return value
     }
 
@@ -1279,8 +1292,13 @@ function pipe(...a) {
 }
 const abcdeRE = /[a-e]/g
 function mathsolver(s) {
-    if (typeof nerdamer == 'undefined') return 401
-    return s.includes('=') ? nerdsolver(s) : evaluated(s)
+    try {
+        if (typeof nerdamer == 'undefined') return 401
+        return s.includes('=') ? nerdsolver(s) : evaluated(s)
+    }
+    catch(e) {
+        return null
+    }
 }
 function isNode() {
     return typeof window === 'undefined'
@@ -1725,7 +1743,7 @@ const NUMBER_RANGES = {
     ],
     //multiplication: [[11,15], [11, 19], [11, 19], [11, 19], [11, 19], [11, 19], [11, 19]],
     tens: [[2, 9], [2, 18], [30, 50], [50, 75]],
-    exponents: [[1, 8], [3, 10]],
+    exponents: [[2, 8], [3, 10]],
     fractions: [[1, 5], [3, 7], [1, 9]],
     answers: [[1, 9], [5,20]],
     addZeroes: [[1, 2], [2, 4], [4, 6]],
@@ -1767,24 +1785,28 @@ const alanStudent = {
             // to trust me ...
         ],
 
-        'exponents': [
             //'a/b - x - b*c',
             //'ax - bc',
             //'2x - 3',
             //'ax - 3',
-            //'2^a * 2^b = 2^x',
-            //'2^a * 2^b * 2^c = 2^x',
-            '4^a * 2^x = 2^(x + x)',
-            '2^a * 2^x = $pow64^(b + x)',
-            '2^a * 2^-b',
-            'a^a * a^${2a} = a^(3x)',
-            'a^b * a^(c+2) = a^x',
-            'a^(-x) = a^(b+x+c)',
+
+
+        'exponents': [
+            //'2^a * 2^-b = 2^x',
+            //'a^a * a^${2a} = a^(3x)',
+            //'a^b * a^(c+2) = a^x',
+            //'a^(-x) = a^(b+x+c)',
+            //'c^a * c^b = c^x',
+            'd^a * d^b * d^c / d^(a $pm c) = d^x',
+            'd^a * ${d * d}^b * d^c / d^(a $pm c) = d^x',
+            '$pow2^(a) $timesDivide $pow2^(x) = 2^a',
+            '$pow3^(b) = $pow3^(a) / $pow3^(x)',
+            '$pow3^(a) * $pow3^(x) = $pow3',
+            '$pow2^a $timesDivide 2^x = 2^(x $pm x)',
+            '2^a * 2^x = $pow64^(b $pm x)',
             '($pow3^a * (1/$pow3^c)) / ($pow3^b / $pow3^x)',
-            progression('a^b'),
-            '$pow2^a * $pow2^x',
-            '$pow3^a / $pow3^x',
-            '$pow3^a * $pow3^x',
+            //'2^a * 2^(-1)',
+            //progression('a^b'),
         ],
     }
 }
@@ -1798,6 +1820,7 @@ function medley() {
     const items = generator.student.templates[generator.topic]
     for (i =0; i < items.length; i++) {
         console.log(generator.generate())
+        if (__n && i == __n) return 
         generator.index += 1
     }
 }
@@ -1831,3 +1854,4 @@ function isArray(a) {
 
 
 //medley()
+
