@@ -477,9 +477,10 @@ class QuestionGenerator {
     }
 
     getValue(template) {
+        let value
         try {
             template = this._preparse(template)
-            let value = this.generator.generate(template)
+            value = this.generator.generate(template)
             this._postparse(value)
             
             if (!value.answer) {
